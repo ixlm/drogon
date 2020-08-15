@@ -5,6 +5,7 @@ message(STATUS "compiler: " ${CMAKE_CXX_COMPILER_ID})
 option(BUILD_CTL "Build drogon_ctl" ON)
 option(BUILD_EXAMPLES "Build examples" ON)
 option(BUILD_ORM "Build orm" ON)
+option(BUILD_NOSQL "Build nosql" ON)
 option(COZ_PROFILING "Use coz for profiling" OFF)
 option(LIBPQ_BATCH_MODE "Use batch mode for libpq" ON)
 option(BUILD_DROGON_SHARED "Build drogon as a shared lib" OFF)
@@ -54,6 +55,7 @@ target_include_directories(
   ${PROJECT_NAME}
   PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/lib/inc>
          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/orm_lib/inc>
+         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/nosql_lib/inc>
          $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}>
          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/trantor>
          $<INSTALL_INTERFACE:${INSTALL_INCLUDE_DIR}>)
@@ -210,7 +212,12 @@ if(BUILD_ORM)
                        orm_lib/src/sqlite3_impl/Sqlite3ResultImpl.cc)
   endif(SQLite3_FOUND)
 endif(BUILD_ORM)
+set(DROGON_SOURCES ${DROGON_SOURCES}
+                   nosql_lib/src/couchbase/CouchBaseClientImpl.cc
+                   nosql_lib/src/couchbase/CouchBaseConnection.cc)
+if(BUILD_NOSQL)
 
+endif(BUILD_NOSQL)
 if((NOT MSVC) OR (NOT BUILD_ORM))
   find_package(ZLIB REQUIRED)
   target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
