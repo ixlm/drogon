@@ -132,27 +132,13 @@ class HttpResponseImpl : public HttpResponse
         return contentType_;
     }
 
-    virtual const std::string &getHeader(const std::string &key) const override
-    {
-        auto field = key;
-        transform(field.begin(), field.end(), field.begin(), ::tolower);
-        return getHeaderBy(field);
-    }
-
-    virtual const std::string &getHeader(std::string &&key) const override
+    virtual const std::string &getHeader(std::string key) const override
     {
         transform(key.begin(), key.end(), key.begin(), ::tolower);
         return getHeaderBy(key);
     }
 
-    virtual void removeHeader(const std::string &key) override
-    {
-        auto field = key;
-        transform(field.begin(), field.end(), field.begin(), ::tolower);
-        removeHeaderBy(field);
-    }
-
-    virtual void removeHeader(std::string &&key) override
+    virtual void removeHeader(std::string key) override
     {
         transform(key.begin(), key.end(), key.begin(), ::tolower);
         removeHeaderBy(key);
@@ -177,22 +163,20 @@ class HttpResponseImpl : public HttpResponse
 
     void removeHeaderBy(const std::string &lowerKey)
     {
+        fullHeaderString_.reset();
         headers_.erase(lowerKey);
     }
 
-    virtual void addHeader(const std::string &key,
-                           const std::string &value) override
+    virtual void addHeader(std::string field, const std::string &value) override
     {
         fullHeaderString_.reset();
-        auto field = key;
         transform(field.begin(), field.end(), field.begin(), ::tolower);
         headers_[std::move(field)] = value;
     }
 
-    virtual void addHeader(const std::string &key, std::string &&value) override
+    virtual void addHeader(std::string field, std::string &&value) override
     {
         fullHeaderString_.reset();
-        auto field = key;
         transform(field.begin(), field.end(), field.begin(), ::tolower);
         headers_[std::move(field)] = std::move(value);
     }
@@ -240,10 +224,18 @@ class HttpResponseImpl : public HttpResponse
     virtual void setBody(const std::string &body) override
     {
         bodyPtr_ = std::make_shared<HttpMessageStringBody>(body);
+        if (passThrough_)
+        {
+            addHeader("content-length", std::to_string(bodyPtr_->length()));
+        }
     }
     virtual void setBody(std::string &&body) override
     {
         bodyPtr_ = std::make_shared<HttpMessageStringBody>(std::move(body));
+        if (passThrough_)
+        {
+            addHeader("content-length", std::to_string(bodyPtr_->length()));
+        }
     }
 
     void redirect(const std::string &url)
@@ -343,9 +335,10 @@ class HttpResponseImpl : public HttpResponse
         {
             auto gunzipBody =
                 utils::gzipDecompress(bodyPtr_->data(), bodyPtr_->length());
-            removeHeader("content-encoding");
+            removeHeaderBy("content-encoding");
             bodyPtr_ =
                 std::make_shared<HttpMessageStringBody>(move(gunzipBody));
+            addHeader("content-length", std::to_string(bodyPtr_->length()));
         }
     }
 #ifdef USE_BROTLI
@@ -355,9 +348,10 @@ class HttpResponseImpl : public HttpResponse
         {
             auto gunzipBody =
                 utils::brotliDecompress(bodyPtr_->data(), bodyPtr_->length());
-            removeHeader("content-encoding");
+            removeHeaderBy("content-encoding");
             bodyPtr_ =
                 std::make_shared<HttpMessageStringBody>(move(gunzipBody));
+            addHeader("content-length", std::to_string(bodyPtr_->length()));
         }
     }
 #endif
@@ -370,6 +364,10 @@ class HttpResponseImpl : public HttpResponse
     virtual void setBody(const char *body, size_t len) override
     {
         bodyPtr_ = std::make_shared<HttpMessageStringViewBody>(body, len);
+        if (passThrough_)
+        {
+            addHeader("content-length", std::to_string(bodyPtr_->length()));
+        }
     }
     virtual void setContentTypeCodeAndCustomString(
         ContentType type,

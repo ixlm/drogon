@@ -14,7 +14,7 @@ set(DROGON_MINOR_VERSION 0)
 set(DROGON_PATCH_VERSION 0)
 set(DROGON_VERSION
     ${DROGON_MAJOR_VERSION}.${DROGON_MINOR_VERSION}.${DROGON_PATCH_VERSION})
-set(DROGON_VERSION_STRING "${DROGON_VERSION}.beta20")
+set(DROGON_VERSION_STRING "${DROGON_VERSION}.beta21")
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
@@ -194,11 +194,6 @@ if(BUILD_ORM)
     set(DROGON_SOURCES ${DROGON_SOURCES}
                        orm_lib/src/mysql_impl/MysqlConnection.cc
                        orm_lib/src/mysql_impl/MysqlResultImpl.cc)
-  else(MySQL_FOUND)
-    if(MSVC)
-      find_package(ZLIB REQUIRED)
-      target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
-    endif(MSVC)
   endif(MySQL_FOUND)
 
   # Find sqlite3.
@@ -211,10 +206,8 @@ if(BUILD_ORM)
   endif(SQLite3_FOUND)
 endif(BUILD_ORM)
 
-if((NOT MSVC) OR (NOT BUILD_ORM))
-  find_package(ZLIB REQUIRED)
-  target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
-endif((NOT MSVC) OR (NOT BUILD_ORM))
+find_package(ZLIB REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE ZLIB::ZLIB)
 
 find_package(OpenSSL)
 if(OpenSSL_FOUND)
